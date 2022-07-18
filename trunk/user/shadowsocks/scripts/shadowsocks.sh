@@ -4,6 +4,7 @@
 # Copyright (C) 2017 yushi studio <ywb94@qq.com>
 # Copyright (C) 2018 lean <coolsnowwolf@gmail.com>
 # Copyright (C) 2019 chongshengB <bkye@vip.qq.com>
+# Copyright (C) 2022 TurBoTse <860018505@qq.com>
 #
 # This is free software, licensed under the GNU General Public License v3.
 # See /LICENSE for more information.
@@ -63,7 +64,6 @@ find_bin() {
 }
 
 gen_config_file() {
-
 	fastopen="false"
 	case "$2" in
 	0) config_file=$CONFIG_FILE && local stype=$(nvram get d_type) ;;
@@ -248,11 +248,11 @@ start_redir_tcp() {
 		lua /etc_ro/ss/gensocks.lua $GLOBAL_SERVER 1080 >/dev/null 2>&1 &
 		usleep 500000
 		done
-	    ;;
+		;;
 	esac
 	return 0
 	}
-	
+
 start_redir_udp() {
 	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
 		redir_udp=1
@@ -282,12 +282,12 @@ start_redir_udp() {
 			ipt2socks -U -b 0.0.0.0 -4 -s 127.0.0.1 -p 10801 -l 1080 >/dev/null 2>&1 &
 			;;
 		socks5)
-		echo "1"
-		    ;;
+			echo "1"
+			;;
 		esac
 	fi
 	return 0
-	}
+}
 	ss_switch=$(nvram get backup_server)
 	if [ $ss_switch != "nil" ]; then
 		switch_time=$(nvram get ss_turn_s)
@@ -297,14 +297,13 @@ start_redir_udp() {
 	fi
 	#return $?
 
-
-
 start_dns() {
 		echo "create china hash:net family inet hashsize 1024 maxelem 65536" >/tmp/china.ipset
 		awk '!/^$/&&!/^#/{printf("add china %s'" "'\n",$0)}' /etc/storage/chinadns/chnroute.txt >>/tmp/china.ipset
 		ipset -! flush china
 		ipset -! restore </tmp/china.ipset 2>/dev/null
 		rm -f /tmp/china.ipset
+
 case "$run_mode" in
 	router)
 		dnsstr="$(nvram get tunnel_forward)"
@@ -324,7 +323,7 @@ case "$run_mode" in
 		dns2tcp -L"127.0.0.1#5353" -R"$dnsstr" >/dev/null 2>&1 &
 		pdnsd_enable_flag=0	
 		logger -st "SS" "开始处理gfwlist..."
-		;;
+	;;
 	oversea)
 		ipset add gfwlist $dnsserver 2>/dev/null
 		mkdir -p /etc/storage/dnsmasq.oversea
@@ -339,30 +338,33 @@ EOF
 		ipset add ss_spec_wan_ac $dnsserver 2>/dev/null
 	;;
 	esac
+	logger -t "SS" "重启 dnsmasq 服务器"
 	/sbin/restart_dhcpd
+	logger -t "SS" "已重启成功。"
 }
 
-start_AD() {
-	mkdir -p /tmp/dnsmasq.dom
-	curl -k -s -o /tmp/adnew.conf --connect-timeout 10 --retry 3 $(nvram get ss_adblock_url)
-	if [ ! -f "/tmp/adnew.conf" ]; then
-		logger -t "SS" "AD文件下载失败，可能是地址失效或者网络异常！"
+start_ad() {
+	if [ $(nvram get ss_adblock) = "1" ]; then
+		mkdir -p /tmp/dnsmasq.dom
+		curl -k -s -o /tmp/ssadnew.conf --connect-timeout 10 --retry 3 $(nvram get ss_adblock_url)
+	fi
+	if [ ! -f "/tmp/ssadnew.conf" ]; then
+		logger -t "SS" "广告过滤功能未开启或者过滤地址失效,网络异常等！"
 	else
-		logger -t "SS" "AD文件下载成功"
-		if [ -f "/tmp/adnew.conf" ]; then
-			check = `grep -wq "address=" /tmp/adnew.conf`
+		logger -t "SS" "AD文件下载成功,广告过滤功能已启用"
+		if [ -f "/tmp/ssadnew.conf" ]; then
+			check = `grep -wq "address=" /tmp/ssadnew.conf`
 	  		if [ ! -n "$check" ] ; then
-	    			cp /tmp/adnew.conf /tmp/dnsmasq.dom/ad.conf
+			    cp /tmp/ssadnew.conf /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 	  		else
-			    cat /tmp/adnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/ad.conf
+			    cat /tmp/ssadnew.conf | grep ^\|\|[^\*]*\^$ | sed -e 's:||:address\=\/:' -e 's:\^:/0\.0\.0\.0:' > /tmp/dnsmasq.dom/anti-ad-for-dnsmasq.conf
 			fi
 		fi
 	fi
-	rm -f /tmp/adnew.conf
+	rm -f /tmp/ssadnew.conf
 }
 
-
-# ================================= 启动 Socks5代理 ===============================
+# ========== 启动 Socks5 代理 ==========
 start_local() {
 	local s5_port=$(nvram get socks5_port)
 	local local_server=$(nvram get socks5_enable)
@@ -448,33 +450,31 @@ EOF
 	fi
 }
 
-# ================================= 启动 SS ===============================
+# ========== 启动 SS ==========
 ssp_start() { 
-    ss_enable=`nvram get ss_enable`
-if rules; then
+	ss_enable=`nvram get ss_enable`
+	if rules; then
 		if start_redir_tcp; then
-		start_redir_udp
-        #start_rules
-		#start_AD
-        start_dns
+			start_redir_udp
+			#start_rules
+			#start_ad
+			start_dns
 		fi
-		fi
-        start_local
-        start_watchcat
-        auto_update
-        ENABLE_SERVER=$(nvram get global_server)
-        [ "$ENABLE_SERVER" = "-1" ] && return 1
-
-        logger -t "SS" "启动成功。"
-        logger -t "SS" "内网IP控制为:$lancons"
-        nvram set check_mode=0
-        if [ "$pppoemwan" -ne 0 ]; then
-        /usr/bin/detect.sh
-        fi
+	fi
+	start_local
+	start_watchcat
+	auto_update
+	ENABLE_SERVER=$(nvram get global_server)
+	[ "$ENABLE_SERVER" = "-1" ] && return 1
+	logger -t "SS" "已启动成功。"
+	logger -t "SS" "内网IP控制为:$lancons"
+	nvram set check_mode=0
+	if [ "$pppoemwan" -ne 0 ]; then
+		/usr/bin/detect.sh
+	fi
 }
 
-# ================================= 关闭SS ===============================
-
+# ========== 关闭 SS ==========
 ssp_close() {
 	rm -rf /tmp/cdn
 	/usr/bin/ss-rules -f
@@ -490,21 +490,22 @@ ssp_close() {
 		rm -f /etc/storage/dnsmasq-ss.d
 	fi
 	clear_iptable
+	logger -t "SS" "重启 dnsmasq 服务器"
 	/sbin/restart_dhcpd
+	logger -t "SS" "已重启成功。"
 	if [ "$pppoemwan" -ne 0 ]; then
-        /usr/bin/detect.sh
-        fi
+		/usr/bin/detect.sh
+	fi
 }
 
 
-clear_iptable()
-{
+clear_iptable() {
 	s5_port=$(nvram get socks5_port)
 	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
 	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
 	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
 	ip6tables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT
-	
+
 }
 
 kill_process() {
@@ -514,6 +515,7 @@ kill_process() {
 		killall v2ray >/dev/null 2>&1
 		kill -9 "$v2ray_process" >/dev/null 2>&1
 	fi
+
 	ssredir=$(pidof ss-redir)
 	if [ -n "$ssredir" ]; then
 		logger -t "SS" "关闭ss-redir进程..."
@@ -527,7 +529,7 @@ kill_process() {
 		killall ssr-redir >/dev/null 2>&1
 		kill -9 "$rssredir" >/dev/null 2>&1
 	fi
-	
+
 	sslocal_process=$(pidof ss-local)
 	if [ -n "$sslocal_process" ]; then
 		logger -t "SS" "关闭ss-local进程..."
@@ -548,7 +550,7 @@ kill_process() {
 		killall kumasocks >/dev/null 2>&1
 		kill -9 "$kumasocks_process" >/dev/null 2>&1
 	fi
-	
+
 	ipt2socks_process=$(pidof ipt2socks)
 	if [ -n "$ipt2socks_process" ]; then
 		logger -t "SS" "关闭ipt2socks进程..."
@@ -569,7 +571,7 @@ kill_process() {
 		killall ssr-server >/dev/null 2>&1
 		kill -9 "$ssrs_process" >/dev/null 2>&1
 	fi
-	
+
 	cnd_process=$(pidof chinadns-ng)
 	if [ -n "$cnd_process" ]; then
 		logger -t "SS" "关闭chinadns-ng进程..."
@@ -583,7 +585,7 @@ kill_process() {
 		killall dns2tcp >/dev/null 2>&1
 		kill -9 "$dns2tcp_process" >/dev/null 2>&1
 	fi
-	
+
 	microsocks_process=$(pidof microsocks)
 	if [ -n "$microsocks_process" ]; then
 		logger -t "SS" "关闭socks5服务端进程..."
@@ -593,7 +595,7 @@ kill_process() {
 }
 
 
-# ================================= 重启 SS ===============================
+# ========== 启用备用服务器 ==========
 ressp() {
 	BACKUP_SERVER=$(nvram get backup_server)
 	start_redir $BACKUP_SERVER
@@ -607,26 +609,62 @@ ressp() {
 	logger -t "SS" "内网IP控制为:$lancons"
 }
 
+check_smsrtdns(){
+	smartdns_process=$(pidof smartdns)
+	if [ -n "$smartdns_process" ] && [ $(nvram get sdns_enable) = 1 ] ; then
+		logger -t "SS" "检测到 SmartDNS 已开启,正在重启 SmartDNS 服务器"
+		[ $(pidof smartdns | awk '{ print $1 }')x != x ] && killall -9 smartdns >/dev/null 2>&1
+		/usr/bin/smartdns.sh start
+	fi
+}
+
 case $1 in
 start)
+	start_ad
 	ssp_start
+	smartdns_process=$(pidof smartdns)
+	if [ -n "$smartdns_process" ] && [ $(nvram get sdns_enable) = 1 ] ; then
+		sleep 2
+		check_smsrtdns
+	fi
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 stop)
 	killall -q -9 ssr-switch
 	ssp_close
+	dns2tcp_process=$(pidof dns2tcp)
+	smartdns_process=$(pidof smartdns)
+	if [ -n "$dns2tcp_process" ] && [ -n "$smartdns_process" ] && [ $(nvram get sdns_enable) = 1 ] ; then
+		sleep 2
+		check_smsrtdns
+	else
+		if [ -n "$smartdns_process" ] && [ $(nvram get ss_enable) = 0 ] ; then
+			sleep 2
+			check_smsrtdns
+		fi
+	fi
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 restart)
 	ssp_close
 	ssp_start
+	if [ $(nvram get sdns_enable) = 1 ] ; then
+		sleep 2
+		check_smsrtdns
+	fi
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 reserver)
 	ssp_close
 	ressp
+	if [ $(nvram get sdns_enable) = 1 ] ; then
+		sleep 2
+		check_smsrtdns
+	fi
+	echo 3 > /proc/sys/vm/drop_caches
 	;;
 *)
 	echo "check"
 	#exit 0
 	;;
 esac
-
-
