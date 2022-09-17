@@ -1,4 +1,4 @@
-SRC_NAME=dnsmasq-2.8x
+SRC_NAME=dnsmasq-2.87rc1
 THISDIR = $(shell pwd)
 
 COPTS := -DHAVE_BROKEN_RTC -DNO_INOTIFY -DNO_AUTH -DNO_LOOP
@@ -12,8 +12,13 @@ ifneq ($(CONFIG_FIRMWARE_INCLUDE_IPSET),y)
 COPTS += -DNO_IPSET
 endif
 
-all:
+all: extract_test
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) COPTS="$(COPTS)"
+
+extract_test:
+	( if [ ! -d $(SRC_NAME) ]; then \
+		tar -xzf $(SRC_NAME).tar.gz; \
+	fi )
 
 clean:
 	$(MAKE) -C $(SRC_NAME) clean

@@ -1659,7 +1659,7 @@ VOID peer_addba_rsp_action(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 		amsdu_en = wlan_config_get_amsdu_en(pEntry->wdev) && ppdu->tx_amsdu_support && pFrame->BaParm.AMSDUSupported;
 		/* resource management */
 		if (!ba_resrc_ori_add(pAd, Elem->Wcid, pFrame->BaParm.TID, ori_ba_wsize, amsdu_en, pFrame->TimeOutValue)) {
-			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_ERROR, ("%s(): add ori resrc fail\n", __func__));
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_INFO, ("%s(): add ori resrc fail\n", __func__));
 			return;
 		}
 		/* send BAR after BA session is build up */
