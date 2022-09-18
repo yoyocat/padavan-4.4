@@ -183,7 +183,7 @@ refresh_ntp(void)
 	ntp_server = (ntpc_server_idx) ? ntp_addr[1] : ntp_addr[0];
 	ntpc_server_idx = (ntpc_server_idx + 1) % 2;
 
-	eval("/usr/sbin/ntpd", "-qt", "-S", NTPC_DONE_SCRIPT, "-p", ntp_server);
+	eval("/usr/sbin/ntpd", "-q", "-S", NTPC_DONE_SCRIPT, "-p", ntp_server);
 
 	logmessage("NTP Client", "Synchronizing time to %s.", ntp_server);
 }

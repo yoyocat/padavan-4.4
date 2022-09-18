@@ -12,13 +12,8 @@ ifneq ($(CONFIG_FIRMWARE_INCLUDE_IPSET),y)
 COPTS += -DNO_IPSET
 endif
 
-all: extract_test
+all:
 	$(MAKE) -j$(HOST_NCPU) -C $(SRC_NAME) COPTS="$(COPTS)"
-
-extract_test:
-	( if [ ! -d $(SRC_NAME) ]; then \
-		tar -xzf $(SRC_NAME).tar.gz; \
-	fi )
 
 clean:
 	$(MAKE) -C $(SRC_NAME) clean
