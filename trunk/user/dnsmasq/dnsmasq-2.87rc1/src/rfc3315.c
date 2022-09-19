@@ -178,8 +178,8 @@ static int dhcp6_maybe_relay(struct state *state, unsigned char *inbuff, size_t 
 	  
       if (!state->context)
 	{
-	  my_syslog(MS_DHCP | LOG_WARNING, 
-		    _("no address range available for DHCPv6 request via %s"), state->iface_name);
+	  /* my_syslog(MS_DHCP | LOG_WARNING, 
+		    _("no address range available for DHCPv6 request via %s"), state->iface_name); */
 	  return 0;
 	}
 
