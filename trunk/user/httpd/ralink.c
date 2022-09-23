@@ -626,7 +626,7 @@ char* GetBW(int BW)
 	case BW_80:
 		return "80M";
 	case BW_160:
-		return "160";
+		return "160M";
 	default:
 		return "N/A";
 	}
