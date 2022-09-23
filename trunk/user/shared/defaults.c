@@ -232,7 +232,7 @@ struct nvram_pair router_defaults[] = {
 	{ "wl_HT_AMSDU", "1" },
 	{ "wl_HT_BAWinSize", "256" },
 	{ "wl_mumimo", "1" },
-	{ "wl_band_steering", "0" },
+	{ "wl_band_steering", "0" },		/* band steering AP 5Ghz */
 #else
 	{ "wl_HT_AMSDU", "0" },
 	{ "wl_HT_BAWinSize", "64" },
@@ -335,14 +335,15 @@ struct nvram_pair router_defaults[] = {
 	{ "rt_greenap", "0" },		/* 2G GreenAP */
 	{ "rt_HT_RDG", "0" },
 	{ "rt_HT_AMSDU", "1" },
-	{ "rt_HT_MpduDensity", "5" },
 	{ "rt_HT_80211KV", "0" },
 	{ "rt_HT_80211R", "0" },
-	{ "rt_airtimefairness", "0" },
+	{ "rt_HT_MpduDensity", "5" },
+	{ "rt_band_steering", "0" },		/* band steering AP 2.4Ghz */
 #if defined (USE_WID_2G) && (USE_WID_2G==7615 || USE_WID_2G==7915)
 	{ "rt_HT_BAWinSize", "256" },
 	{ "rt_ldpc", "1" },
 	{ "rt_turbo_qam", "1" },
+	{ "rt_airtimefairness", "0" },
 #else
 	{ "rt_HT_BAWinSize", "64" },
 	{ "rt_ldpc", "0" },
