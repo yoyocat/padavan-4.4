@@ -2659,7 +2659,11 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 #else
 	int has_openssl_ec = 0;
 #endif
+#if defined (SUPPORT_DDNS_SSL)
 	int has_ddns_ssl = 1;
+#else
+	int has_ddns_ssl = 0;
+#endif
 #if defined (USE_RT3352_MII)
 	int has_inic_mii = 1;
 #else
@@ -2678,7 +2682,11 @@ ej_firmware_caps_hook(int eid, webs_t wp, int argc, char **argv)
 	int has_switch_type = 10; // RT3052/RT3352/RT5350 Embedded ESW
 #endif
 #endif
+#if defined (BOARD_GPIO_BTN_ROUTER) || defined (BOARD_GPIO_BTN_AP)
+	int has_btn_mode = 1;
+#else
 	int has_btn_mode = 0;
+#endif
 #if defined (USE_WID_5G) && (USE_WID_5G==7610 || USE_WID_5G==7612 || USE_WID_5G==7615 || USE_WID_5G==7915)
 	int has_5g_vht = 1;
 #else
