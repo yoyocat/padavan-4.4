@@ -270,6 +270,7 @@ add_rule()
 	$ipt_n -A ADBYBY -d 240.0.0.0/4 -j RETURN
 	ip_rule
 	logger -t "adbyby" "添加8118透明代理端口。"
+	rm -f /tmp/adbyby.save
 	$ipt_n -I PREROUTING -p tcp --dport 80 -j ADBYBY
 	iptables-save | grep -E "ADBYBY|^\*|^COMMIT" | sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/" > /tmp/adbyby.save
 	if [ -f "/tmp/adbyby.save" ]; then
@@ -307,24 +308,7 @@ reload_rule()
 adbyby_uprules()
 {
 	adbyby_close
-	addscripts
-	if [ ! -f "$PROG_PATH/adbyby" ]; then
-	logger -t "adbyby" "adbyby程序文件不存在，正在解压..."
-	tar -xzvf "/etc_ro/adbyby.tar.gz" -C "/tmp"
-	logger -t "adbyby" "成功解压至：$PROG_PATH"
-	fi
-	#if [ $abp_mode -eq 1 ]; then
-	#/tmp/adbyby/adblock.sh &
-	#fi
-	#/tmp/adbyby/adupdate.sh &
-	add_rules
-	$PROG_PATH/adbyby &>/dev/null &
-	add_dns
-	iptables-save | grep ADBYBY >/dev/null || \
-	add_rule
-	hosts_ads
-	/sbin/restart_dhcpd
-	#add_cron
+	adbyby_start
 }
 
 #updateadb()
